@@ -16,6 +16,8 @@ impl<'a> Parse<'a> for Ast {
 pub enum Statement {
     Assignment(Assignment),
     Loop(Loop),
+    // TODO
+    // If(If)
 }
 impl<'a> Parse<'a> for Statement {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
@@ -96,5 +98,55 @@ impl<'a> Parse<'a> for Loop {
                 instruction,
             },
         ))
+    }
+}
+
+pub struct If {
+    pub variable: Variable,
+    pub condition: Condition,
+    pub instructions: Ast,
+}
+
+impl<'a> Parse<'a> for If {
+    fn parse(input: &'a str) -> IResult<&'a str, Self> {
+        let (rest, _) = keyword::K_if::parse(input)?;
+        let (rest, variable) = Variable::parse_ws(rest)?;
+        let (rest, condition) = Condition::parse_ws(rest)?;
+        let (rest, _) = keyword::K_do::parse_ws(rest)?;
+        let (rest, instructions) = Ast::parse_ws(rest)?;
+        let (rest, _) = keyword::K_end::parse_ws(rest)?;
+
+        Ok((
+            rest,
+            If {
+                variable,
+                condition,
+                instructions,
+            },
+        ))
+    }
+}
+
+pub enum Condition {
+    Eq(Constant),
+    Neq(Constant),
+}
+
+impl<'a> Parse<'a> for Condition {
+    fn parse(input: &'a str) -> IResult<&'a str, Self> {
+        use nom::branch::alt;
+        use nom::bytes::complete::tag;
+
+        let (rest, t) = alt((tag("!="), tag("=")))(input)?;
+
+        let (rest, c) = Constant::parse_ws(rest)?;
+
+        let condition = match t {
+            "!=" => Condition::Neq(c),
+            "=" => Condition::Eq(c),
+            _ => unreachable!(),
+        };
+
+        Ok((rest, condition))
     }
 }
