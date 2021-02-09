@@ -36,3 +36,12 @@ impl<'a> Parse<'a> for K_if {
         Ok((rest, Self))
     }
 }
+
+pub struct K_assign;
+
+impl<'a> Parse<'a> for K_assign {
+    fn parse(input: &'a str) -> IResult<&'a str, Self> {
+        let (rest, _) = nom::bytes::complete::tag_no_case(":=")(input)?;
+        Ok((rest, Self))
+    }
+}

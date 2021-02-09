@@ -28,11 +28,52 @@ impl<'a> Parse<'a> for Statement {
 pub struct Assignment {
     pub destination: Variable,
     pub op_var: Variable,
+    pub operation: Operation,
     pub op_const: Constant,
 }
+
 impl<'a> Parse<'a> for Assignment {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        todo!()
+        let (rest, var) = Variable::parse(input)?;
+        let (rest, _) = keyword::K_assign::parse_ws(input)?;
+        let (
+    }
+}
+
+pub enum Operation {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+}
+
+impl<'a> Parse<'a> for Operation {
+    fn parse(input: &'a str) -> IResult<&'a str, Self> {
+        use nom::branch::alt;
+        use nom::bytes::complete::tag;
+        let (rest, op) = alt((
+            tag("+"),
+            tag("-"),
+            tag("*"),
+            tag("/"),
+            tag("%"),
+            tag("mul"),
+            tag("div"),
+            tag("mod"),
+        ))(input)?;
+
+        use Operation::*;
+        let op = match op {
+            "+" => Add,
+            "-" => Sub,
+            "*" | "mul" => Mul,
+            "/" | "div" => Div,
+            "%" | "mod" => Mod,
+            _ => unreachable!(),
+        };
+
+        Ok((rest, op))
     }
 }
 
