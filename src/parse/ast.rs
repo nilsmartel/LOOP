@@ -2,7 +2,7 @@ use super::keyword;
 use super::Parse;
 use nom::bytes::complete::take_while;
 use nom::bytes::complete::take_while1;
-use nom::{combinator::recognize, IResult, sequence::pair};
+use nom::{combinator::recognize, sequence::pair, IResult};
 
 pub struct Ast {
     statements: Vec<Statement>,
@@ -39,9 +39,17 @@ pub struct Variable {
 }
 impl<'a> Parse<'a> for Variable {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, name) = recognize(pair(take_while1(is_alpha), take_while(|c| c == '_' || is_alpha(c) || is_number(c))))(input)?;
+        let (rest, name) = recognize(pair(
+            take_while1(is_alpha),
+            take_while(|c| is_alpha(c) || is_number(c) || c == '_'),
+        ))(input)?;
 
-    Ok((rest, Variable{name: name.to_string()}))
+        Ok((
+            rest,
+            Variable {
+                name: name.to_string(),
+            },
+        ))
     }
 }
 
@@ -53,9 +61,11 @@ fn is_number(c: char) -> bool {
     c >= '0' && c <= '9'
 }
 
+// all constants in loop are postive integers
 pub struct Constant {
     pub value: u64,
 }
+
 impl<'a> Parse<'a> for Constant {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
         let (rest, number) = take_while1(is_number)(input)?;
@@ -75,7 +85,9 @@ impl<'a> Parse<'a> for Loop {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
         let (rest, _) = keyword::K_loop::parse(input)?;
         let (rest, counter) = Variable::parse_ws(rest)?;
+        let (rest, _) = keyword::K_do::parse_ws(rest)?;
         let (rest, instruction) = Ast::parse_ws(rest)?;
+        let (rest, _) = keyword::K_end::parse_ws(rest)?;
 
         Ok((
             rest,
