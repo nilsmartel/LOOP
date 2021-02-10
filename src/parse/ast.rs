@@ -1,42 +1,64 @@
 use super::keyword;
 use super::Parse;
-use nom::bytes::complete::take_while;
-use nom::bytes::complete::take_while1;
-use nom::{combinator::recognize, sequence::pair, IResult};
+use nom::{
+    branch::alt,
+    bytes::complete::{tag, take_while, take_while1},
+    combinator::{map, recognize},
+    multi::many0,
+    sequence::pair,
+    IResult,
+};
 
 pub struct Ast {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
+
 impl<'a> Parse<'a> for Ast {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        todo!()
+        map(many0(Statement::parse_ws), |statements| Ast { statements })(input)
     }
 }
 
 pub enum Statement {
     Assignment(Assignment),
     Loop(Loop),
-    // TODO
-    // If(If)
+    If(If),
 }
+
 impl<'a> Parse<'a> for Statement {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        todo!()
+        alt((
+            map(Assignment::parse, Statement::Assignment),
+            map(Loop::parse, Statement::Loop),
+            map(If::parse, Statement::If),
+        ))(input)
     }
 }
 
 pub struct Assignment {
     pub destination: Variable,
-    pub op_var: Variable,
+    pub left_hand_side: Variable,
     pub operation: Operation,
-    pub op_const: Constant,
+    pub right_hand_side: Constant,
 }
 
 impl<'a> Parse<'a> for Assignment {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, var) = Variable::parse(input)?;
-        let (rest, _) = keyword::K_assign::parse_ws(input)?;
-        let (
+        let (rest, destination) = Variable::parse(input)?;
+        let (rest, _) = keyword::K_assign::parse_ws(rest)?;
+        let (rest, left_hand_side) = Variable::parse_ws(rest)?;
+        let (rest, operation) = Operation::parse_ws(rest)?;
+        let (rest, right_hand_side) = Constant::parse_ws(rest)?;
+
+        Ok((
+            rest,
+            Assignment {
+                destination,
+                left_hand_side,
+                operation,
+                right_hand_side,
+            },
+        ))
     }
 }
 
@@ -50,8 +72,6 @@ pub enum Operation {
 
 impl<'a> Parse<'a> for Operation {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        use nom::branch::alt;
-        use nom::bytes::complete::tag;
         let (rest, op) = alt((
             tag("+"),
             tag("-"),
@@ -175,9 +195,6 @@ pub enum Condition {
 
 impl<'a> Parse<'a> for Condition {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        use nom::branch::alt;
-        use nom::bytes::complete::tag;
-
         let (rest, t) = alt((tag("!="), tag("=")))(input)?;
 
         let (rest, c) = Constant::parse_ws(rest)?;
