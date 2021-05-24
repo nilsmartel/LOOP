@@ -1,47 +1,59 @@
 use super::Parse;
+use nom::branch::alt;
+use nom::bytes::complete::{tag, tag_no_case};
 use nom::IResult;
 
-pub struct K_loop;
+pub struct Loop;
 
-impl<'a> Parse<'a> for K_loop {
-    fn parse(input: &'a str) -> IResult<&'a str, K_loop> {
-        let (rest, _) = nom::bytes::complete::tag_no_case("loop")(input)?;
-        Ok((rest, K_loop))
+impl<'a> Parse<'a> for Loop {
+    fn parse(input: &'a str) -> IResult<&'a str, Loop> {
+        let (rest, _) = tag_no_case("loop")(input)?;
+        Ok((rest, Loop))
     }
 }
 
-pub struct K_do;
+pub struct Do;
 
-impl<'a> Parse<'a> for K_do {
+impl<'a> Parse<'a> for Do {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, _) = nom::bytes::complete::tag_no_case("do")(input)?;
+        let (rest, _) = tag_no_case("do")(input)?;
         Ok((rest, Self))
     }
 }
 
-pub struct K_end;
+pub struct End;
 
-impl<'a> Parse<'a> for K_end {
+impl<'a> Parse<'a> for End {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, _) = nom::bytes::complete::tag_no_case("end")(input)?;
+        let (rest, _) = tag_no_case("end")(input)?;
         Ok((rest, Self))
     }
 }
 
-pub struct K_if;
+pub struct If;
 
-impl<'a> Parse<'a> for K_if {
+impl<'a> Parse<'a> for If {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, _) = nom::bytes::complete::tag_no_case("if")(input)?;
+        let (rest, _) = tag_no_case("if")(input)?;
         Ok((rest, Self))
     }
 }
 
-pub struct K_assign;
+// = as well ass :=
+pub struct Assign;
 
-impl<'a> Parse<'a> for K_assign {
+impl<'a> Parse<'a> for Assign {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, _) = nom::bytes::complete::tag_no_case(":=")(input)?;
+        let (rest, _) = alt((tag("="), tag(":=")))(input)?;
+        Ok((rest, Self))
+    }
+}
+
+pub struct Semicolon;
+
+impl<'a> Parse<'a> for Semicolon {
+    fn parse(input: &'a str) -> IResult<&'a str, Self> {
+        let (rest, _) = tag(";")(input)?;
         Ok((rest, Self))
     }
 }
@@ -52,8 +64,7 @@ mod keyword_tests {
 
     #[test]
     fn assign() {
-        assert!(K_assign::parse_ws(":=").is_ok());
-        assert!(K_assign::parse_ws("  :=").is_ok());
+        assert!(K_assign::parse_ws("=").is_ok());
+        assert!(K_assign::parse_ws("  =").is_ok());
     }
 }
-

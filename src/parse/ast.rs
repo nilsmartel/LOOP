@@ -25,6 +25,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn keyword() {
+        let input = "  =";
+        let (rest, _) = keyword::K_assign::parse_ws(input).unwrap();
+        assert_eq!(rest, "");
+    }
+
+    #[test]
     fn full_ast() {
         let code = "
         x1 = x0 + 0;
@@ -32,13 +39,11 @@ mod tests {
         LOOP x2 DO
             x1 = x1 + 1;
         END
-        x0 = x1 + 0;
-        ";
+        x0 = x1 + 0;";
 
         let (rest, ast) = Ast::parse_ws(code).unwrap();
         assert_eq!(
-            "
-        ",
+            "",
             rest
         );
 
@@ -113,6 +118,7 @@ impl<'a> Parse<'a> for Assignment {
         let (rest, left_hand_side) = Variable::parse_ws(rest)?;
         let (rest, operation) = Operation::parse_ws(rest)?;
         let (rest, right_hand_side) = Constant::parse_ws(rest)?;
+        let (rest, _) = keyword::K_Semicolon::parse_ws(rest)?;
 
         Ok((
             rest,
