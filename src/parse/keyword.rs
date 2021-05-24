@@ -64,7 +64,7 @@ mod keyword_tests {
 
     #[test]
     fn assign() {
-        assert!(K_assign::parse_ws("=").is_ok());
-        assert!(K_assign::parse_ws("  =").is_ok());
+        assert!(Assign::parse_ws("=").is_ok());
+        assert!(Assign::parse_ws("  =").is_ok());
     }
 }

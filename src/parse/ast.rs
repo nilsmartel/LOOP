@@ -27,7 +27,7 @@ mod tests {
     #[test]
     fn keyword() {
         let input = "  =";
-        let (rest, _) = keyword::K_assign::parse_ws(input).unwrap();
+        let (rest, _) = keyword::Assign::parse_ws(input).unwrap();
         assert_eq!(rest, "");
     }
 
@@ -114,11 +114,11 @@ pub struct Assignment {
 impl<'a> Parse<'a> for Assignment {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
         let (rest, destination) = Variable::parse(input)?;
-        let (rest, _) = keyword::K_assign::parse_ws(rest)?;
+        let (rest, _) = keyword::Assign::parse_ws(rest)?;
         let (rest, left_hand_side) = Variable::parse_ws(rest)?;
         let (rest, operation) = Operation::parse_ws(rest)?;
         let (rest, right_hand_side) = Constant::parse_ws(rest)?;
-        let (rest, _) = keyword::K_Semicolon::parse_ws(rest)?;
+        let (rest, _) = keyword::Semicolon::parse_ws(rest)?;
 
         Ok((
             rest,
@@ -221,11 +221,11 @@ pub struct Loop {
 
 impl<'a> Parse<'a> for Loop {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, _) = keyword::K_loop::parse(input)?;
+        let (rest, _) = keyword::Loop::parse(input)?;
         let (rest, counter) = Variable::parse_ws(rest)?;
-        let (rest, _) = keyword::K_do::parse_ws(rest)?;
+        let (rest, _) = keyword::Do::parse_ws(rest)?;
         let (rest, instruction) = Ast::parse_ws(rest)?;
-        let (rest, _) = keyword::K_end::parse_ws(rest)?;
+        let (rest, _) = keyword::End::parse_ws(rest)?;
 
         Ok((
             rest,
@@ -246,12 +246,12 @@ pub struct If {
 
 impl<'a> Parse<'a> for If {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
-        let (rest, _) = keyword::K_if::parse(input)?;
+        let (rest, _) = keyword::If::parse(input)?;
         let (rest, variable) = Variable::parse_ws(rest)?;
         let (rest, condition) = Condition::parse_ws(rest)?;
-        let (rest, _) = keyword::K_do::parse_ws(rest)?;
+        let (rest, _) = keyword::Do::parse_ws(rest)?;
         let (rest, instructions) = Ast::parse_ws(rest)?;
-        let (rest, _) = keyword::K_end::parse_ws(rest)?;
+        let (rest, _) = keyword::End::parse_ws(rest)?;
 
         Ok((
             rest,
