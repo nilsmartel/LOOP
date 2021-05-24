@@ -9,6 +9,7 @@ use nom::{
     IResult,
 };
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Ast {
     pub statements: Vec<Statement>,
 }
@@ -19,6 +20,68 @@ impl<'a> Parse<'a> for Ast {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn full_ast() {
+        let code = "
+        x1 = x0 + 0;
+        x2 = x0 + 3;
+        LOOP x2 DO
+            x1 = x1 + 1;
+        END
+        x0 = x1 + 0;
+        ";
+
+        let (rest, ast) = Ast::parse_ws(code).unwrap();
+        assert_eq!(
+            "
+        ",
+            rest
+        );
+
+        assert_eq!(ast.statements.len(), 4)
+    }
+
+    #[test]
+    fn assignment() {
+        let code = "x1 = x0 + 3;";
+
+        let (rest, assignment) = Assignment::parse_ws(code).unwrap();
+        assert_eq!("", rest);
+
+        assert_eq!(assignment, Assignment {
+            destination: Variable::parse("x1").unwrap().1,
+            left_hand_side: Variable::parse("x0").unwrap().1,
+            operation: Operation::Add,
+            right_hand_side: Constant::parse("3").unwrap().1,
+        });
+    }
+
+    #[test]
+    fn variable() {
+        let code = "x1";
+
+        let (rest, variable) = Variable::parse_ws(code).unwrap();
+        assert_eq!("", rest);
+
+        assert_eq!(variable, Variable{name: "x1".to_string()});
+    }
+
+    #[test]
+    fn operation() {
+        let code = "+";
+
+        let (rest, operation) = Operation::parse_ws(code).unwrap();
+        assert_eq!("", rest);
+
+        assert_eq!(operation, Operation::Add);
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Statement {
     Assignment(Assignment),
     Loop(Loop),
@@ -35,6 +98,7 @@ impl<'a> Parse<'a> for Statement {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Assignment {
     pub destination: Variable,
     pub left_hand_side: Variable,
@@ -62,6 +126,7 @@ impl<'a> Parse<'a> for Assignment {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Operation {
     Add,
     Sub,
@@ -97,9 +162,11 @@ impl<'a> Parse<'a> for Operation {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Variable {
     pub name: String,
 }
+
 impl<'a> Parse<'a> for Variable {
     fn parse(input: &'a str) -> IResult<&'a str, Self> {
         let (rest, name) = recognize(pair(
@@ -125,6 +192,7 @@ fn is_number(c: char) -> bool {
 }
 
 // all constants in loop are postive integers
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Constant {
     pub value: u64,
 }
@@ -139,6 +207,7 @@ impl<'a> Parse<'a> for Constant {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Loop {
     pub counter: Variable,
     pub instruction: Ast,
@@ -162,6 +231,7 @@ impl<'a> Parse<'a> for Loop {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct If {
     pub variable: Variable,
     pub condition: Condition,
@@ -188,6 +258,7 @@ impl<'a> Parse<'a> for If {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Condition {
     Eq(Constant),
     Neq(Constant),

@@ -45,3 +45,15 @@ impl<'a> Parse<'a> for K_assign {
         Ok((rest, Self))
     }
 }
+
+#[cfg(test)]
+mod keyword_tests {
+    use super::*;
+
+    #[test]
+    fn assign() {
+        assert!(K_assign::parse_ws(":=").is_ok());
+        assert!(K_assign::parse_ws("  :=").is_ok());
+    }
+}
+
