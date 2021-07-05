@@ -82,6 +82,10 @@ mod compilation {
             let mut fctx = FunctionBuilderContext::new();
             let mut builder = FunctionBuilder::new(&mut context.func, &mut fctx);
 
+            let entry = builder.create_block();
+            builder.append_block_params_for_function_params(entry);
+            builder.switch_to_block(entry);
+
             let mut varcount = program.variables.len();
             let vars: HashMap<String, Variable> = program
                 .variables
@@ -91,13 +95,12 @@ mod compilation {
                     let var = Variable::new(i);
 
                     builder.declare_var(var, I64);
+                    let zero = builder.ins().iconst(I64, 0);
+                    builder.def_var(var,zero);
                     (name, var)
                 })
                 .collect();
 
-            let entry = builder.create_block();
-            builder.append_block_params_for_function_params(entry);
-            builder.switch_to_block(entry);
 
             // Set variable input to argument of function
             if let Some(var) = vars.get("input") {
