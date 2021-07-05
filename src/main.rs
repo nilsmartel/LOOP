@@ -1,3 +1,4 @@
+mod ir;
 use std::collections::HashMap;
 use parse::*;
 pub mod parse;
