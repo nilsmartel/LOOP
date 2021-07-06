@@ -1,5 +1,7 @@
 use super::keyword;
+use crate::ir;
 use super::Parse;
+
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_while, take_while1},
@@ -12,6 +14,126 @@ use nom::{
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Ast {
     pub statements: Vec<Statement>,
+}
+
+// This is some of the worst code I've written. 
+// Just want to get this to work as swiftly as possible
+impl Ast {
+    pub fn to_ir(self) -> crate::ir::Program {
+        let instructions = map_instructions(self.statements);
+
+        // Deeply uninspired code to extract all mentionings of variables in the instruction set
+        fn getvars(ins: &[ir::Instruction], mut vars: &mut Vec<String>) {
+
+            fn variable_of_value(v: &ir::Value) -> Option<String> {
+                match v {
+                    &ir::Value::Variable(s) => Some(s),
+                    _ => None
+                }
+            }
+            
+            for i in ins.iter() {
+                match i {
+                    ir::Instruction::Assign {to, expr} => {
+                        vars.push(to.clone());
+                        if let Some(v) = variable_of_value(&expr.left) {
+                            vars.push(v);
+                        }
+
+                        if let Some(v) = variable_of_value(&expr.right) {
+                            vars.push(v);
+                        }
+                    },
+                    ir::Instruction::If {condition, body} => {
+                        if let Some(v) = variable_of_value(&condition.left) {
+                            vars.push(v);
+                        }
+
+                        if let Some(v) = variable_of_value(&condition.right) {
+                            vars.push(v);
+                        }
+                        getvars(body, &mut vars);
+                    },
+                    ir::Instruction::Loop {times, body} => {
+                        if let Some(v) = variable_of_value(&times) {
+                            vars.push(v);
+                        }
+                        getvars(body, &mut vars);
+                    },
+                }
+            }
+        }
+
+        let variables: Vec<String> = {
+            let mut v = Vec::new();
+            getvars(&instructions, &mut v);
+
+            // Get distinct elements
+            let v = v.into_iter().collect::<std::collections::BTreeSet<String>>();
+
+            // convert to vector
+            v.into_iter().collect()
+        };
+
+        ir::Program {
+            instructions,
+            variables,
+        }
+    }
+}
+
+fn map_instructions(statements: Vec<Statement>) -> Vec<ir::Instruction> {
+    statements.into_iter().fold(Vec::new(), |mut instructions, statement| {
+        instructions.push(map_instruction(statement));
+        instructions
+    })
+}
+
+fn map_instruction(statement: Statement) -> ir::Instruction {
+    match statement {
+        Statement::Assignment(Assignment { destination, left_hand_side, operation, right_hand_side }) => {
+            ir::Instruction::Assign {
+                to: destination.name,
+                expr: ir::Expr {
+                    left: ir::Value::Variable(left_hand_side.name),
+                    right: ir::Value::Constant(right_hand_side.value as i64),
+                    op: map_op(operation),
+                }
+            }
+        },
+        Statement::If(If { variable, condition, instructions }) => {
+            let (op, Constant {value}) = match condition {
+                Condition::Eq(val) => ( ir::Operation::Equal, val),
+                Condition::Neq(val) => ( ir::Operation::NotEqual, val),
+            };
+            let right = ir::Value::Constant(value as i64);
+            ir::Instruction::If {
+                condition: ir::Expr {
+                    left: ir::Value::Variable(variable.name),
+                    op,
+                    right,
+                },
+                body: map_instructions(instructions.statements),
+            }
+        }
+        Statement::Loop(Loop { counter, instruction }) => {
+            ir::Instruction::Loop {
+                times: ir::Value::Variable(counter.name),
+                body: map_instructions(instruction.statements),
+            }
+        }
+    }
+}
+
+fn map_op(operation: Operation) -> ir::Operation {
+    match operation {
+                    Operation::Add => ir::Operation::Plus,
+                    Operation::Sub => ir::Operation::Minus,
+                    Operation::Mod => ir::Operation::Modulo,
+                    Operation::Mul => ir::Operation::Times,
+                    Operation::Div => ir::Operation::Divided,
+                }
+
 }
 
 impl<'a> Parse<'a> for Ast {

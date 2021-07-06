@@ -8,9 +8,23 @@ fn main() {
 
     let sourcecode: String = std::fs::read_to_string(filename).expect("failed to read file");
 
-    let (_, code ) = Ast::parse_ws(&sourcecode).expect("failed to parse sourcecode");
+    let (_, ast ) = Ast::parse_ws(&sourcecode).expect("failed to parse sourcecode");
 
-    let scope = eval(&code, HashMap::new());
+    let ir = ast.to_ir();
+
+    let compute = ir::compile(ir);
+
+    let input = std::env::args().nth(2).map_or(0,|s| s.parse::<i64>().expect("second argument is required to be a positive number"));
+
+    let output = compute(input);
+
+    println!("{}", output);
+
+    // interpret(ast);
+}
+
+fn interpret(ast: Ast) {
+    let scope = eval(&ast, HashMap::new());
 
     for (key, value) in scope {
         println!("{}: {}", key, value);
