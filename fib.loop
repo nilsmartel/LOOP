@@ -1,0 +1,11 @@
+n = input
+a = 0
+b = 1
+
+LOOP n do
+    c = a + b
+    a = b + 0
+    b = a + 0
+end
+
+output = a
