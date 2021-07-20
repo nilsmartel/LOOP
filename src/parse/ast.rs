@@ -16,7 +16,7 @@ pub struct Ast {
     pub statements: Vec<Statement>,
 }
 
-// This is some of the worst code I've written. 
+// This is some of the worst code I've written.
 // Just want to get this to work as swiftly as possible
 impl Ast {
     pub fn to_ir(self) -> crate::ir::Program {
@@ -27,11 +27,11 @@ impl Ast {
 
             fn variable_of_value(v: &ir::Value) -> Option<String> {
                 match v {
-                    &ir::Value::Variable(s) => Some(s),
+                    &ir::Value::Variable(ref s) => Some(s.clone()),
                     _ => None
                 }
             }
-            
+
             for i in ins.iter() {
                 match i {
                     ir::Instruction::Assign {to, expr} => {
