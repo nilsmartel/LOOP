@@ -122,6 +122,8 @@ mod compilation {
             builder.finalize();
         }
 
+        dbg!(&context.func);
+
         // start the actual jit compilation
         let mut trap_sink = NullTrapSink {};
         let mut stack_map_sink = NullStackMapSink {};
